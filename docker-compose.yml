@@ -1,4 +1,4 @@
-version: "3"
+version: "3.8"
 
 services:
   uwazi:
@@ -83,16 +83,29 @@ services:
     # Based on https://github.com/huridocs/uwazi/releases/tag/1.123.2 . Please update this part in future
     # image: mongo:4.2
     # Using mongo 6.0 (not 4.2 as suggested by Uwazi 1.123.2) because mongo-shell on 4.2 don't run on Debian bullseye
-    image: mongo:6.0
+    #image: mongo:6.0
+    image: mongo:7.0
     restart: unless-stopped
     volumes:
       # - ./data/mongo:/data/db
       - mongodb_data1:/data/db
-    command: mongod
+    # command: mongod
+    # ADDED:
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'host.docker.internal:27017'}]}) }" | mongosh --port 27017 --quiet
+      interval: 5s
+      timeout: 30s
+      start_period: 0s
+      retries: 30
     # command: mongod --smallfiles
   # Don't publish unprotected mongod
-  #  ports:
-  #    - 27017:27017
+  # Comment out following two lines.
+  # UNCOMMENTED FOLLOWING:
+    ports:
+      - 27017:27017
     logging:
       options:
         max-size: 10m
